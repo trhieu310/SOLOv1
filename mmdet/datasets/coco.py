@@ -1,5 +1,5 @@
 import numpy as np
-from pycocotools.coco import COCO
+from pycocotools import COCO
 import json
 
 from .custom import CustomDataset
