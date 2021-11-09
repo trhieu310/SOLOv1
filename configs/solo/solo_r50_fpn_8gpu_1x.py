@@ -50,7 +50,7 @@ test_cfg = dict(
     max_per_img=100)
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '../../input/v24-mini/'
+data_root = '../../input/mini-v2-4/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
@@ -83,17 +83,17 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/train_v2.4.json',
+        ann_file=data_root + 'annotations/train.json',
         img_prefix=data_root + 'train/',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/val_v2.4.json.json',
+        ann_file=data_root + 'annotations/val.json',
         img_prefix=data_root + 'val/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/test_v2.4.json.json',
+        ann_file=data_root + 'annotations/test.json',
         img_prefix=data_root + 'test/',
         pipeline=test_pipeline))
 # optimizer
