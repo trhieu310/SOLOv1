@@ -81,7 +81,7 @@ def coco_classes():
     #     'scissors', 'teddy_bear', 'hair_drier', 'toothbrush'
     # ]
     return [
-        'Illustrator', 'Text', 'ScienceTex'
+        'Illustrator', 'Text', 'ScienceText'
     ]
 
 
