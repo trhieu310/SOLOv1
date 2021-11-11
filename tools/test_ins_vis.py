@@ -18,12 +18,12 @@ import cv2
 import numpy as np
 import matplotlib.cm as cm
 
-def vis_seg(data, result, img_norm_cfg, data_id, colors, score_thr, save_dir):
+def vis_seg(data, result, img_norm_cfg, data_id, colors, score_thr, save_dir, datatype):
     img_tensor = data['img'][0]
     img_metas = data['img_meta'][0].data[0]
     imgs = tensor2imgs(img_tensor, **img_norm_cfg)
     assert len(imgs) == len(img_metas)
-    class_names = get_classes('coco')
+    class_names = get_classes(datatype)
 
     for img, img_meta, cur_result in zip(imgs, img_metas, result):
         if cur_result is None:
@@ -96,7 +96,7 @@ def single_gpu_test(model, data_loader, args, cfg=None, verbose=True):
         results.append(result)
 
         if verbose:
-            vis_seg(data, seg_result, cfg.img_norm_cfg, data_id=i, colors=colors, score_thr=args.score_thr, save_dir=args.save_dir)
+            vis_seg(data, seg_result, cfg.img_norm_cfg, data_id=i, colors=colors, score_thr=args.score_thr, save_dir=args.save_dir, datatype=args.datatype)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
@@ -174,6 +174,7 @@ def parse_args():
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument('--out', help='output result file')
+    parser.add_argument('--datatype', dest='datatype', type=str, required=True, help='Your datatset type')
     parser.add_argument(
         '--json_out',
         help='output result file name without extension',
