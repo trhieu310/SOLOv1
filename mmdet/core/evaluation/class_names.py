@@ -88,6 +88,10 @@ def cityscapes_classes():
         'bicycle'
     ]
 
+def docslayout_classes():
+    return [
+        'Illustration', 'Text', 'ScienceText'
+    ]
 
 dataset_aliases = {
     'voc': ['voc', 'pascal_voc', 'voc07', 'voc12'],
@@ -95,7 +99,8 @@ dataset_aliases = {
     'imagenet_vid': ['vid', 'imagenet_vid', 'ilsvrc_vid'],
     'coco': ['coco', 'mscoco', 'ms_coco'],
     'wider_face': ['WIDERFaceDataset', 'wider_face', 'WDIERFace'],
-    'cityscapes': ['cityscapes']
+    'cityscapes': ['cityscapes'],
+    'docslayout': ['docslayout']
 }
 
 
