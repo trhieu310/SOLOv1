@@ -76,7 +76,7 @@ def vis_seg(data, result, img_norm_cfg, data_id, colors, score_thr, save_dir, da
             center_y, center_x = ndimage.measurements.center_of_mass(cur_mask)
             vis_pos = (max(int(center_x) - 10, 0), int(center_y))
             cv2.putText(seg_show, label_text, vis_pos,
-                        cv2.FONT_HERSHEY_COMPLEX, 0.3, (255, 255, 255))  # green
+                        cv2.FONT_HERSHEY_COMPLEX, 0.3, (51, 0, 234))  # green
         mmcv.imwrite(seg_show, '{}/{}.jpg'.format(save_dir, data_id))
 
 
