@@ -12,7 +12,7 @@ checkpoint_file = '../../input/epoch12/epoch_12.pth'
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
 
 # test a single image
-img = 'demo.jpg'
+img = 'demo.png'
 result = inference_detector(model, img)
 
 show_result_ins(img, result, model.CLASSES, score_thr=0.25, out_file="demo_out.jpg")
