@@ -3,10 +3,10 @@ import mmcv
 
 
 # config_file = '../configs/solo/decoupled_solo_r50_fpn_8gpu_3x.py'
-config_file = '../configs/solo/solo_r50_fpn_8gpu_1x.py'
+config_file = './solo_r50_fpn_8gpu_1x.py'
 # download the checkpoint from model zoo and put it in `checkpoints/`
 # checkpoint_file = '../checkpoints/DECOUPLED_SOLO_R50_3x.pth'
-checkpoint_file = '../../input/epoch12/epoch_12.pth'
+checkpoint_file = './latest.pth'
 
 # build the model from a config file and a checkpoint file
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
