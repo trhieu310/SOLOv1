@@ -75,7 +75,7 @@ def analyze_individual_category(k, cocoDt, cocoGt, catId, iou_type):
             gt.dataset['annotations'][idx]['category_id'] = catId
     cocoEval = COCOeval(gt, copy.deepcopy(dt), iou_type)
     cocoEval.params.imgIds = imgIds
-    cocoEval.params.maxDets = [100]
+    cocoEval.params.maxDets = [200]
     cocoEval.params.iouThrs = [.1]
     cocoEval.params.useCats = 1
     cocoEval.evaluate()
@@ -91,7 +91,7 @@ def analyze_individual_category(k, cocoDt, cocoGt, catId, iou_type):
             gt.dataset['annotations'][idx]['category_id'] = catId
     cocoEval = COCOeval(gt, copy.deepcopy(dt), iou_type)
     cocoEval.params.imgIds = imgIds
-    cocoEval.params.maxDets = [100]
+    cocoEval.params.maxDets = [200]
     cocoEval.params.iouThrs = [.1]
     cocoEval.params.useCats = 1
     cocoEval.evaluate()
@@ -125,7 +125,7 @@ def analyze_results(res_file, ann_file, res_types, out_dir):
             copy.deepcopy(cocoGt), copy.deepcopy(cocoDt), iou_type)
         cocoEval.params.imgIds = imgIds
         cocoEval.params.iouThrs = [.75, .5, .1]
-        cocoEval.params.maxDets = [100]
+        cocoEval.params.maxDets = [200]
         cocoEval.evaluate()
         cocoEval.accumulate()
         ps = cocoEval.eval['precision']
