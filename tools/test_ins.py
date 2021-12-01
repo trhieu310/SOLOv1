@@ -232,7 +232,7 @@ def main():
             else:
                 if not isinstance(outputs[0], dict):
                     result_files = results2json_segm(dataset, outputs, args.out)
-                    coco_eval(result_files, eval_types, dataset.coco, max_dets_per_image=None, classwise=False)
+                    coco_eval(result_files, eval_types, dataset.coco, max_dets_per_image=[1,10,200], classwise=True)
                 else:
                     for name in outputs[0]:
                         print('\nEvaluating {}'.format(name))
