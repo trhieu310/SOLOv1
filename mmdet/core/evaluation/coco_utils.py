@@ -4,6 +4,7 @@ import mmcv
 import numpy as np
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+from pycocotools.cocoevalmaxdets import COCOevalMaxDets
 from terminaltables import AsciiTable
 
 from .recall import eval_recalls
@@ -13,6 +14,7 @@ def coco_eval(result_files,
               result_types,
               coco,
               max_dets=(100, 300, 1000),
+              max_dets_per_image=None,
               classwise=False):
     for res_type in result_types:
         assert res_type in [
@@ -41,7 +43,11 @@ def coco_eval(result_files,
         coco_dets = coco.loadRes(result_file)
         img_ids = coco.getImgIds()
         iou_type = 'bbox' if res_type == 'proposal' else res_type
-        cocoEval = COCOeval(coco, coco_dets, iou_type)
+        if max_dets_per_image is None:
+            cocoEval = COCOeval(coco, coco_dets, iou_type)
+        else:
+            cocoEval = COCOevalMaxDets(coco, coco_dets, iou_type)
+            cocoEval.params.maxDets = max_dets_per_image
         cocoEval.params.imgIds = img_ids
         if res_type == 'proposal':
             cocoEval.params.useCats = 0
@@ -79,6 +85,7 @@ def coco_eval(result_files,
             table_data += [result for result in results_2d]
             table = AsciiTable(table_data)
             print(table.table)
+    return cocoEval
 
 
 def fast_eval_recall(results,

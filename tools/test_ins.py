@@ -232,7 +232,7 @@ def main():
             else:
                 if not isinstance(outputs[0], dict):
                     result_files = results2json_segm(dataset, outputs, args.out)
-                    coco_eval(result_files, eval_types, dataset.coco)
+                    coco_eval(result_files, eval_types, dataset.coco, max_dets_per_image=None, classwise=False)
                 else:
                     for name in outputs[0]:
                         print('\nEvaluating {}'.format(name))
@@ -240,7 +240,7 @@ def main():
                         result_file = args.out + '.{}'.format(name)
                         result_files = results2json(dataset, outputs_,
                                                     result_file)
-                        coco_eval(result_files, eval_types, dataset.coco)
+                        coco_eval(result_files, eval_types, dataset.coco, max_dets_per_image=None, classwise=False)
 
     # Save predictions in the COCO json format
     if args.json_out and rank == 0:
