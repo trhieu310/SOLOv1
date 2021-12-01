@@ -7,7 +7,7 @@ import numpy as np
 
 def print_coco_results(results):
 
-    def _print(result, ap=1, iouThr=None, areaRng='all', maxDets=100):
+    def _print(result, ap=1, iouThr=None, areaRng='all', maxDets=200):
         iStr = ' {:<18} {} @[ IoU={:<9} | \
         area={:>6s} | maxDets={:>3d} ] = {:0.3f}'
 
