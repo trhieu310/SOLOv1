@@ -47,7 +47,9 @@ def coco_eval(result_files,
             cocoEval = COCOeval(coco, coco_dets, iou_type)
         else:
             cocoEval = COCOevalMaxDets(coco, coco_dets, iou_type)
+            print(cocoEval.params.maxDets)
             cocoEval.params.maxDets = max_dets_per_image
+            print(cocoEval.params.maxDets)
         cocoEval.params.imgIds = img_ids
         if res_type == 'proposal':
             cocoEval.params.useCats = 0
