@@ -149,7 +149,6 @@ def load_json_logs(json_logs):
     # load and convert json_logs to log_dict, key is epoch, value is a sub dict
     # keys of sub dict is different metrics, e.g. memory, bbox_mAP
     # value of sub dict is a list of corresponding values of all iterations
-    json_logs = [json_logs]
     log_dicts = [dict() for _ in json_logs]
     for json_log, log_dict in zip(json_logs, log_dicts):
         with open(json_log, 'r') as log_file:
