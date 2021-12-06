@@ -16,7 +16,7 @@ def coco_eval(result_files,
               coco,
               max_dets=(100, 300, 1000),
               max_dets_per_image=None,
-              classwise=False):
+              classwise=True):
     for res_type in result_types:
         assert res_type in [
             'proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'
