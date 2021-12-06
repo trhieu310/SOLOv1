@@ -6,7 +6,7 @@ from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from terminaltables import AsciiTable
 
-from coco.pycocotools.cocoevalmaxdets import COCOevalMaxDets
+from pycocotools.cocoevalmaxdets import COCOevalMaxDets
 
 from .recall import eval_recalls
 
