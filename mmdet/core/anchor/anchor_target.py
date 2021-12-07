@@ -23,7 +23,7 @@ def anchor_target(anchor_list,
         valid_flag_list (list[list]): Multi level valid flags of each image.
         gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
         img_metas (list[dict]): Meta info of each image.
-        target_means (Iterable): Mean value of regression targets.
+        target_means (aIterble): Mean value of regression targets.
         target_stds (Iterable): Std value of regression targets.
         cfg (dict): RPN train configs.
 
