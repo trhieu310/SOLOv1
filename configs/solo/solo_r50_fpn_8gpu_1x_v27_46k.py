@@ -52,7 +52,7 @@ test_cfg = dict(
 dataset_type = 'DocslayoutDataset'
 data_root = '../../input/dataset-doclayout-v270/'
 img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+    mean=[248.59754788, 248.25756053, 248.33532779], std=[25.44402269, 25.95625288, 25.59872952], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
@@ -120,7 +120,7 @@ total_epochs = 36
 device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/solo_release_r50_fpn_8gpu_1x_35k'
+work_dir = './work_dirs/solo_release_r50_fpn_8gpu_1x_46k'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
