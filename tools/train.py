@@ -98,9 +98,8 @@ def main():
         logger.info('Set random seed to {}, deterministic: {}'.format(
             args.seed, args.deterministic))
         set_random_seed(args.seed, deterministic=args.deterministic)
-    
-    cfg_wandb = yaml.safe_load(cfg.dump())
-    wandb.init(project="doc_layout", name="solov1", config=cfg_wandb, sync_tensorboard=True)
+    # cfg_wandb = yaml.safe_load(cfg.dump())
+    wandb.init(project="doc_layout", name="solov1", config=cfg, sync_tensorboard=True)
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
 
