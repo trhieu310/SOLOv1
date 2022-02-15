@@ -60,7 +60,6 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
-    print(cfg)
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
