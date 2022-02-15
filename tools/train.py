@@ -3,6 +3,8 @@ import argparse
 import os
 import os.path as osp
 import time
+import wandb
+import yaml
 
 import mmcv
 import torch
@@ -53,11 +55,13 @@ def parse_args():
 
     return args
 
-
 def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+    
+    cfg_wandb = yaml.safe_load(cfg.dump())
+    run = wandb.init(project="doc_layout", name="solov1", config=cfg, sync_tensorboard=True)
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
