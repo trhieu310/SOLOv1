@@ -1,21 +1,16 @@
-# Copyright (c) OpenMMLab. All rights reserved.
-import warnings
 from abc import abstractmethod
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule
-from mmcv.runner import force_fp32
+from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 
-from mmdet.core import build_bbox_coder, multi_apply
-from mmdet.core.anchor.point_generator import MlvlPointGenerator
+from mmdet.core import force_fp32, multi_apply
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
-from .dense_test_mixins import BBoxTestMixin
 
 
 @HEADS.register_module()
-class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
+class AnchorFreeHead(BaseDenseHead):
     """Anchor-free head (FCOS, Fovea, RepPoints, etc.).
 
     Args:
@@ -30,15 +25,15 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         conv_bias (bool | str): If specified as `auto`, it will be decided by
             the norm_cfg. Bias of conv will be set as True if `norm_cfg` is
             None, otherwise False. Default: "auto".
+        background_label (int | None): Label ID of background, set as 0 for
+            RPN and num_classes for other heads. It will automatically set as
+            num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
-        bbox_coder (dict): Config of bbox coder. Defaults
-            'DistancePointBBoxCoder'.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
     """  # noqa: W605
 
     _version = 1
@@ -51,6 +46,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                  strides=(4, 8, 16, 32, 64),
                  dcn_on_last_conv=False,
                  conv_bias='auto',
+                 background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -58,27 +54,13 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                      alpha=0.25,
                      loss_weight=1.0),
                  loss_bbox=dict(type='IoULoss', loss_weight=1.0),
-                 bbox_coder=dict(type='DistancePointBBoxCoder'),
                  conv_cfg=None,
                  norm_cfg=None,
                  train_cfg=None,
-                 test_cfg=None,
-                 init_cfg=dict(
-                     type='Normal',
-                     layer='Conv2d',
-                     std=0.01,
-                     override=dict(
-                         type='Normal',
-                         name='conv_cls',
-                         std=0.01,
-                         bias_prob=0.01))):
-        super(AnchorFreeHead, self).__init__(init_cfg)
+                 test_cfg=None):
+        super(AnchorFreeHead, self).__init__()
         self.num_classes = num_classes
-        self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        if self.use_sigmoid_cls:
-            self.cls_out_channels = num_classes
-        else:
-            self.cls_out_channels = num_classes + 1
+        self.cls_out_channels = num_classes
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
@@ -88,19 +70,16 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self.conv_bias = conv_bias
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
-        self.bbox_coder = build_bbox_coder(bbox_coder)
-
-        self.prior_generator = MlvlPointGenerator(strides)
-
-        # In order to keep a more general interface and be consistent with
-        # anchor_head. We can think of point like one anchor
-        self.num_base_priors = self.prior_generator.num_base_priors[0]
-
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
+        self.background_label = (
+            num_classes if background_label is None else background_label)
+        # background_label should be either 0 or num_classes
+        assert (self.background_label == 0
+                or self.background_label == num_classes)
 
         self._init_layers()
 
@@ -155,6 +134,18 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self.conv_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
         self.conv_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
+
+    def init_weights(self):
+        """Initialize weights of the head."""
+        for m in self.cls_convs:
+            if isinstance(m.conv, nn.Conv2d):
+                normal_init(m.conv, std=0.01)
+        for m in self.reg_convs:
+            if isinstance(m.conv, nn.Conv2d):
+                normal_init(m.conv, std=0.01)
+        bias_cls = bias_init_with_prob(0.01)
+        normal_init(self.conv_cls, std=0.01, bias=bias_cls)
+        normal_init(self.conv_reg, std=0.01)
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
@@ -213,7 +204,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         return multi_apply(self.forward_single, feats)[:2]
 
     def forward_single(self, x):
-        """Forward features of a single scale level.
+        """Forward features of a single scale levle.
 
         Args:
             x (Tensor): FPN feature maps of the specified stride.
@@ -265,8 +256,32 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         raise NotImplementedError
 
     @abstractmethod
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
+    def get_bboxes(self,
+                   cls_scores,
+                   bbox_preds,
+                   img_metas,
+                   cfg=None,
+                   rescale=None):
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_points * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_points * 4, H, W)
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used
+            rescale (bool): If True, return boxes in original image space
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
-        """Compute regression, classification and centerness targets for points
+        """Compute regression, classification and centerss targets for points
         in multiple images.
 
         Args:
@@ -285,22 +300,10 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                            dtype,
                            device,
                            flatten=False):
-        """Get points of a single scale level.
-
-        This function will be deprecated soon.
-        """
-
-        warnings.warn(
-            '`_get_points_single` in `AnchorFreeHead` will be '
-            'deprecated soon, we support a multi level point generator now'
-            'you can get points of a single level feature map '
-            'with `self.prior_generator.single_level_grid_priors` ')
-
+        """Get points of a single scale level."""
         h, w = featmap_size
-        # First create Range with the default dtype, than convert to
-        # target `dtype` for onnx exporting.
-        x_range = torch.arange(w, device=device).to(dtype)
-        y_range = torch.arange(h, device=device).to(dtype)
+        x_range = torch.arange(w, dtype=dtype, device=device)
+        y_range = torch.arange(h, dtype=dtype, device=device)
         y, x = torch.meshgrid(y_range, x_range)
         if flatten:
             y = y.flatten()
@@ -318,33 +321,9 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         Returns:
             tuple: points of each image.
         """
-        warnings.warn(
-            '`get_points` in `AnchorFreeHead` will be '
-            'deprecated soon, we support a multi level point generator now'
-            'you can get points of all levels '
-            'with `self.prior_generator.grid_priors` ')
-
         mlvl_points = []
         for i in range(len(featmap_sizes)):
             mlvl_points.append(
                 self._get_points_single(featmap_sizes[i], self.strides[i],
                                         dtype, device, flatten))
         return mlvl_points
-
-    def aug_test(self, feats, img_metas, rescale=False):
-        """Test function with test time augmentation.
-
-        Args:
-            feats (list[Tensor]): the outer list indicates test-time
-                augmentations and inner Tensor should have a shape NxCxHxW,
-                which contains features for all images in the batch.
-            img_metas (list[list[dict]]): the outer list indicates test-time
-                augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch. each dict has image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
-
-        Returns:
-            list[ndarray]: bbox results of each class
-        """
-        return self.aug_test_bboxes(feats, img_metas, rescale=rescale)

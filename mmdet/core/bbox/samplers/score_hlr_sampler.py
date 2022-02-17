@@ -1,7 +1,6 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import torch
-from mmcv.ops import nms_match
 
+from mmdet.ops import nms_match
 from ..builder import BBOX_SAMPLERS
 from ..transforms import bbox2roi
 from .base_sampler import BaseSampler
@@ -78,11 +77,8 @@ class ScoreHLRSampler(BaseSampler):
 
         is_tensor = isinstance(gallery, torch.Tensor)
         if not is_tensor:
-            if torch.cuda.is_available():
-                device = torch.cuda.current_device()
-            else:
-                device = 'cpu'
-            gallery = torch.tensor(gallery, dtype=torch.long, device=device)
+            gallery = torch.tensor(
+                gallery, dtype=torch.long, device=torch.cuda.current_device())
         perm = torch.randperm(gallery.numel(), device=gallery.device)[:num]
         rand_inds = gallery[perm]
         if not is_tensor:
@@ -232,7 +228,7 @@ class ScoreHLRSampler(BaseSampler):
             gt_labels (Tensor, optional): Class labels of ground truth bboxes.
 
         Returns:
-            tuple[:obj:`SamplingResult`, Tensor]: Sampling result and negative
+            tuple[:obj:`SamplingResult`, Tensor]: Sampling result and negetive
                 label weights.
         """
         bboxes = bboxes[:, :4]

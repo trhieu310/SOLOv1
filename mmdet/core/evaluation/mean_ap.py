@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 from multiprocessing import Pool
 
 import mmcv
@@ -48,7 +47,7 @@ def average_precision(recalls, precisions, mode='area'):
                 precs = precisions[i, recalls[i, :] >= thr]
                 prec = precs.max() if precs.size > 0 else 0
                 ap[i] += prec
-        ap /= 11
+            ap /= 11
     else:
         raise ValueError(
             'Unrecognized mode, only "area" and "11points" are supported')
@@ -61,8 +60,7 @@ def tpfp_imagenet(det_bboxes,
                   gt_bboxes,
                   gt_bboxes_ignore=None,
                   default_iou_thr=0.5,
-                  area_ranges=None,
-                  use_legacy_coordinate=False):
+                  area_ranges=None):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
@@ -75,21 +73,11 @@ def tpfp_imagenet(det_bboxes,
             Default: 0.5.
         area_ranges (list[tuple] | None): Range of bbox areas to be evaluated,
             in the format [(min1, max1), (min2, max2), ...]. Default: None.
-        use_legacy_coordinate (bool): Whether to use coordinate system in
-            mmdet v1.x. which means width, height should be
-            calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
-            Default: False.
 
     Returns:
         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
             each array is (num_scales, m).
     """
-
-    if not use_legacy_coordinate:
-        extra_length = 0.
-    else:
-        extra_length = 1.
-
     # an indicator of ignored gts
     gt_ignore_inds = np.concatenate(
         (np.zeros(gt_bboxes.shape[0], dtype=np.bool),
@@ -110,16 +98,14 @@ def tpfp_imagenet(det_bboxes,
         if area_ranges == [(None, None)]:
             fp[...] = 1
         else:
-            det_areas = (
-                det_bboxes[:, 2] - det_bboxes[:, 0] + extra_length) * (
-                    det_bboxes[:, 3] - det_bboxes[:, 1] + extra_length)
+            det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0]) * (
+                det_bboxes[:, 3] - det_bboxes[:, 1])
             for i, (min_area, max_area) in enumerate(area_ranges):
                 fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
         return tp, fp
-    ious = bbox_overlaps(
-        det_bboxes, gt_bboxes - 1, use_legacy_coordinate=use_legacy_coordinate)
-    gt_w = gt_bboxes[:, 2] - gt_bboxes[:, 0] + extra_length
-    gt_h = gt_bboxes[:, 3] - gt_bboxes[:, 1] + extra_length
+    ious = bbox_overlaps(det_bboxes, gt_bboxes - 1)
+    gt_w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
+    gt_h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
     iou_thrs = np.minimum((gt_w * gt_h) / ((gt_w + 10.0) * (gt_h + 10.0)),
                           default_iou_thr)
     # sort all detections by scores in descending order
@@ -138,7 +124,7 @@ def tpfp_imagenet(det_bboxes,
             # find best overlapped available gt
             for j in range(num_gts):
                 # different from PASCAL VOC: allow finding other gts if the
-                # best overlapped ones are already matched by other det bboxes
+                # best overlaped ones are already matched by other det bboxes
                 if gt_covered[j]:
                     continue
                 elif ious[i, j] >= iou_thrs[j] and ious[i, j] > max_iou:
@@ -158,8 +144,7 @@ def tpfp_imagenet(det_bboxes,
                 fp[k, i] = 1
             else:
                 bbox = det_bboxes[i, :4]
-                area = (bbox[2] - bbox[0] + extra_length) * (
-                    bbox[3] - bbox[1] + extra_length)
+                area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
                 if area >= min_area and area < max_area:
                     fp[k, i] = 1
     return tp, fp
@@ -169,8 +154,7 @@ def tpfp_default(det_bboxes,
                  gt_bboxes,
                  gt_bboxes_ignore=None,
                  iou_thr=0.5,
-                 area_ranges=None,
-                 use_legacy_coordinate=False):
+                 area_ranges=None):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
@@ -180,24 +164,13 @@ def tpfp_default(det_bboxes,
             of shape (k, 4). Default: None
         iou_thr (float): IoU threshold to be considered as matched.
             Default: 0.5.
-        area_ranges (list[tuple] | None): Range of bbox areas to be
-            evaluated, in the format [(min1, max1), (min2, max2), ...].
-            Default: None.
-        use_legacy_coordinate (bool): Whether to use coordinate system in
-            mmdet v1.x. which means width, height should be
-            calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
-            Default: False.
+        area_ranges (list[tuple] | None): Range of bbox areas to be evaluated,
+            in the format [(min1, max1), (min2, max2), ...]. Default: None.
 
     Returns:
         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
             each array is (num_scales, m).
     """
-
-    if not use_legacy_coordinate:
-        extra_length = 0.
-    else:
-        extra_length = 1.
-
     # an indicator of ignored gts
     gt_ignore_inds = np.concatenate(
         (np.zeros(gt_bboxes.shape[0], dtype=np.bool),
@@ -221,15 +194,13 @@ def tpfp_default(det_bboxes,
         if area_ranges == [(None, None)]:
             fp[...] = 1
         else:
-            det_areas = (
-                det_bboxes[:, 2] - det_bboxes[:, 0] + extra_length) * (
-                    det_bboxes[:, 3] - det_bboxes[:, 1] + extra_length)
+            det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0]) * (
+                det_bboxes[:, 3] - det_bboxes[:, 1])
             for i, (min_area, max_area) in enumerate(area_ranges):
                 fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
         return tp, fp
 
-    ious = bbox_overlaps(
-        det_bboxes, gt_bboxes, use_legacy_coordinate=use_legacy_coordinate)
+    ious = bbox_overlaps(det_bboxes, gt_bboxes)
     # for each det, the max iou with all gts
     ious_max = ious.max(axis=1)
     # for each det, which gt overlaps most with it
@@ -242,8 +213,8 @@ def tpfp_default(det_bboxes,
         if min_area is None:
             gt_area_ignore = np.zeros_like(gt_ignore_inds, dtype=bool)
         else:
-            gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + extra_length) * (
-                gt_bboxes[:, 3] - gt_bboxes[:, 1] + extra_length)
+            gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
+                gt_bboxes[:, 3] - gt_bboxes[:, 1])
             gt_area_ignore = (gt_areas < min_area) | (gt_areas >= max_area)
         for i in sort_inds:
             if ious_max[i] >= iou_thr:
@@ -260,8 +231,7 @@ def tpfp_default(det_bboxes,
                 fp[k, i] = 1
             else:
                 bbox = det_bboxes[i, :4]
-                area = (bbox[2] - bbox[0] + extra_length) * (
-                    bbox[3] - bbox[1] + extra_length)
+                area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
                 if area >= min_area and area < max_area:
                     fp[k, i] = 1
     return tp, fp
@@ -300,9 +270,7 @@ def eval_map(det_results,
              iou_thr=0.5,
              dataset=None,
              logger=None,
-             tpfp_fn=None,
-             nproc=4,
-             use_legacy_coordinate=False):
+             nproc=4):
     """Evaluate mAP of a dataset.
 
     Args:
@@ -323,30 +291,17 @@ def eval_map(det_results,
         iou_thr (float): IoU threshold to be considered as matched.
             Default: 0.5.
         dataset (list[str] | str | None): Dataset name or dataset classes,
-            there are minor differences in metrics for different datasets, e.g.
+            there are minor differences in metrics for different datsets, e.g.
             "voc07", "imagenet_det", etc. Default: None.
         logger (logging.Logger | str | None): The way to print the mAP
-            summary. See `mmcv.utils.print_log()` for details. Default: None.
-        tpfp_fn (callable | None): The function used to determine true/
-            false positives. If None, :func:`tpfp_default` is used as default
-            unless dataset is 'det' or 'vid' (:func:`tpfp_imagenet` in this
-            case). If it is given as a function, then this function is used
-            to evaluate tp & fp. Default None.
+            summary. See `mmdet.utils.print_log()` for details. Default: None.
         nproc (int): Processes used for computing TP and FP.
             Default: 4.
-        use_legacy_coordinate (bool): Whether to use coordinate system in
-            mmdet v1.x. which means width, height should be
-            calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
-            Default: False.
 
     Returns:
         tuple: (mAP, [dict, dict, ...])
     """
     assert len(det_results) == len(annotations)
-    if not use_legacy_coordinate:
-        extra_length = 0.
-    else:
-        extra_length = 1.
 
     num_imgs = len(det_results)
     num_scales = len(scale_ranges) if scale_ranges is not None else 1
@@ -361,22 +316,16 @@ def eval_map(det_results,
         cls_dets, cls_gts, cls_gts_ignore = get_cls_results(
             det_results, annotations, i)
         # choose proper function according to datasets to compute tp and fp
-        if tpfp_fn is None:
-            if dataset in ['det', 'vid']:
-                tpfp_fn = tpfp_imagenet
-            else:
-                tpfp_fn = tpfp_default
-        if not callable(tpfp_fn):
-            raise ValueError(
-                f'tpfp_fn has to be a function or None, but got {tpfp_fn}')
-
+        if dataset in ['det', 'vid']:
+            tpfp_func = tpfp_imagenet
+        else:
+            tpfp_func = tpfp_default
         # compute tp and fp for each image with multiple processes
         tpfp = pool.starmap(
-            tpfp_fn,
+            tpfp_func,
             zip(cls_dets, cls_gts, cls_gts_ignore,
                 [iou_thr for _ in range(num_imgs)],
-                [area_ranges for _ in range(num_imgs)],
-                [use_legacy_coordinate for _ in range(num_imgs)]))
+                [area_ranges for _ in range(num_imgs)]))
         tp, fp = tuple(zip(*tpfp))
         # calculate gt number of each scale
         # ignored gts or gts beyond the specific scale are not counted
@@ -385,8 +334,8 @@ def eval_map(det_results,
             if area_ranges is None:
                 num_gts[0] += bbox.shape[0]
             else:
-                gt_areas = (bbox[:, 2] - bbox[:, 0] + extra_length) * (
-                    bbox[:, 3] - bbox[:, 1] + extra_length)
+                gt_areas = (bbox[:, 2] - bbox[:, 0]) * (
+                    bbox[:, 3] - bbox[:, 1])
                 for k, (min_area, max_area) in enumerate(area_ranges):
                     num_gts[k] += np.sum((gt_areas >= min_area)
                                          & (gt_areas < max_area))
@@ -457,7 +406,7 @@ def print_map_summary(mean_ap,
         dataset (list[str] | str | None): Dataset name or dataset classes.
         scale_ranges (list[tuple] | None): Range of scales to be evaluated.
         logger (logging.Logger | str | None): The way to print the mAP
-            summary. See `mmcv.utils.print_log()` for details. Default: None.
+            summary. See `mmdet.utils.print_log()` for details. Default: None.
     """
 
     if logger == 'silent':

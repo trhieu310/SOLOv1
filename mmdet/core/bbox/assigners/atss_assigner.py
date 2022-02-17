@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
 from ..builder import BBOX_ASSIGNERS
@@ -49,7 +48,7 @@ class ATSSAssigner(BaseAssigner):
         4. get corresponding iou for the these candidates, and compute the
            mean and std, set mean + std as the iou threshold
         5. select these candidates whose iou are greater than or equal to
-           the threshold as positive
+           the threshold as postive
         6. limit the positive sample's center in gt
 
 
@@ -120,9 +119,8 @@ class ATSSAssigner(BaseAssigner):
             # select k bbox whose center are closest to the gt center
             end_idx = start_idx + bboxes_per_level
             distances_per_level = distances[start_idx:end_idx, :]
-            selectable_k = min(self.topk, bboxes_per_level)
             _, topk_idxs_per_level = distances_per_level.topk(
-                selectable_k, dim=0, largest=False)
+                self.topk, dim=0, largest=False)
             candidate_idxs.append(topk_idxs_per_level + start_idx)
             start_idx = end_idx
         candidate_idxs = torch.cat(candidate_idxs, dim=0)

@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
 from ..builder import BBOX_SAMPLERS
@@ -21,7 +20,7 @@ class PseudoSampler(BaseSampler):
         """Sample negative samples."""
         raise NotImplementedError
 
-    def sample(self, assign_result, bboxes, gt_bboxes, *args, **kwargs):
+    def sample(self, assign_result, bboxes, gt_bboxes, **kwargs):
         """Directly returns the positive and negative indices  of samples.
 
         Args:

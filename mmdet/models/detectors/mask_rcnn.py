@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 from ..builder import DETECTORS
 from .two_stage import TwoStageDetector
 
@@ -14,8 +13,7 @@ class MaskRCNN(TwoStageDetector):
                  train_cfg,
                  test_cfg,
                  neck=None,
-                 pretrained=None,
-                 init_cfg=None):
+                 pretrained=None):
         super(MaskRCNN, self).__init__(
             backbone=backbone,
             neck=neck,
@@ -23,5 +21,4 @@ class MaskRCNN(TwoStageDetector):
             roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            pretrained=pretrained,
-            init_cfg=init_cfg)
+            pretrained=pretrained)

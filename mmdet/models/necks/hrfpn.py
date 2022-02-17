@@ -1,20 +1,17 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule
+from mmcv.cnn import ConvModule, caffe2_xavier_init
 from torch.utils.checkpoint import checkpoint
 
 from ..builder import NECKS
 
 
 @NECKS.register_module()
-class HRFPN(BaseModule):
-    """HRFPN (High Resolution Feature Pyramids)
+class HRFPN(nn.Module):
+    """HRFPN (High Resolution Feature Pyrmamids)
 
-    paper: `High-Resolution Representations for Labeling Pixels and Regions
-    <https://arxiv.org/abs/1904.04514>`_.
+    arXiv: https://arxiv.org/abs/1904.04514
 
     Args:
         in_channels (list): number of channels for each branch.
@@ -27,7 +24,6 @@ class HRFPN(BaseModule):
         with_cp  (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
         stride (int): stride of 3x3 convolutional layers
-        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -38,9 +34,8 @@ class HRFPN(BaseModule):
                  conv_cfg=None,
                  norm_cfg=None,
                  with_cp=False,
-                 stride=1,
-                 init_cfg=dict(type='Caffe2Xavier', layer='Conv2d')):
-        super(HRFPN, self).__init__(init_cfg)
+                 stride=1):
+        super(HRFPN, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -73,6 +68,12 @@ class HRFPN(BaseModule):
             self.pooling = F.max_pool2d
         else:
             self.pooling = F.avg_pool2d
+
+    def init_weights(self):
+        """Initialize the weights of module."""
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                caffe2_xavier_init(m)
 
     def forward(self, inputs):
         """Forward function."""

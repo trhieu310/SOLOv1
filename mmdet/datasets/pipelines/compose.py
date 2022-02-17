@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import collections
 
 from mmcv.utils import build_from_cfg
@@ -7,7 +6,7 @@ from ..builder import PIPELINES
 
 
 @PIPELINES.register_module()
-class Compose:
+class Compose(object):
     """Compose multiple transforms sequentially.
 
     Args:
@@ -46,10 +45,7 @@ class Compose:
     def __repr__(self):
         format_string = self.__class__.__name__ + '('
         for t in self.transforms:
-            str_ = t.__repr__()
-            if 'Compose(' in str_:
-                str_ = str_.replace('\n', '\n    ')
             format_string += '\n'
-            format_string += f'    {str_}'
+            format_string += f'    {t}'
         format_string += '\n)'
         return format_string

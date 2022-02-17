@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
 import torch
 
@@ -6,8 +5,6 @@ from mmdet.core import bbox2roi
 from mmdet.models.losses import SmoothL1Loss
 from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
-
-EPS = 1e-15
 
 
 @HEADS.register_module()
@@ -97,7 +94,9 @@ class DynamicRoIHead(StandardRoIHead):
             mask_results = self._mask_forward_train(x, sampling_results,
                                                     bbox_results['bbox_feats'],
                                                     gt_masks, img_metas)
-            losses.update(mask_results['loss_mask'])
+            # TODO: Support empty tensor input. #2280
+            if mask_results['loss_mask'] is not None:
+                losses.update(mask_results['loss_mask'])
 
         # update IoU threshold and SmoothL1 beta
         update_iter_interval = self.train_cfg.dynamic_rcnn.update_iter_interval
@@ -144,12 +143,8 @@ class DynamicRoIHead(StandardRoIHead):
         self.bbox_assigner.pos_iou_thr = new_iou_thr
         self.bbox_assigner.neg_iou_thr = new_iou_thr
         self.bbox_assigner.min_pos_iou = new_iou_thr
-        if (np.median(self.beta_history) < EPS):
-            # avoid 0 or too small value for new_beta
-            new_beta = self.bbox_head.loss_bbox.beta
-        else:
-            new_beta = min(self.train_cfg.dynamic_rcnn.initial_beta,
-                           np.median(self.beta_history))
+        new_beta = min(self.train_cfg.dynamic_rcnn.initial_beta,
+                       np.median(self.beta_history))
         self.beta_history = []
         self.bbox_head.loss_bbox.beta = new_beta
         return new_iou_thr, new_beta

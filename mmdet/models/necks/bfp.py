@@ -1,21 +1,19 @@
-# Copyright (c) OpenMMLab. All rights reserved.
+import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule
-from mmcv.cnn.bricks import NonLocal2d
-from mmcv.runner import BaseModule
+from mmcv.cnn import ConvModule, xavier_init
 
+from mmdet.ops import NonLocal2D
 from ..builder import NECKS
 
 
 @NECKS.register_module()
-class BFP(BaseModule):
-    """BFP (Balanced Feature Pyramids)
+class BFP(nn.Module):
+    """BFP (Balanced Feature Pyrmamids)
 
     BFP takes multi-level features as inputs and gather them into a single one,
     then refine the gathered feature and scatter the refined results to
     multi-level features. This module is used in Libra R-CNN (CVPR 2019), see
-    the paper `Libra R-CNN: Towards Balanced Learning for Object Detection
-    <https://arxiv.org/abs/1904.02701>`_ for details.
+    https://arxiv.org/pdf/1904.02701.pdf for details.
 
     Args:
         in_channels (int): Number of input channels (feature maps of all levels
@@ -27,7 +25,6 @@ class BFP(BaseModule):
             multi-level features from bottom to top.
         refine_type (str): Type of the refine op, currently support
             [None, 'conv', 'non_local'].
-        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -36,10 +33,8 @@ class BFP(BaseModule):
                  refine_level=2,
                  refine_type=None,
                  conv_cfg=None,
-                 norm_cfg=None,
-                 init_cfg=dict(
-                     type='Xavier', layer='Conv2d', distribution='uniform')):
-        super(BFP, self).__init__(init_cfg)
+                 norm_cfg=None):
+        super(BFP, self).__init__()
         assert refine_type in [None, 'conv', 'non_local']
 
         self.in_channels = in_channels
@@ -60,12 +55,18 @@ class BFP(BaseModule):
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg)
         elif self.refine_type == 'non_local':
-            self.refine = NonLocal2d(
+            self.refine = NonLocal2D(
                 self.in_channels,
                 reduction=1,
                 use_scale=False,
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg)
+
+    def init_weights(self):
+        """Initialize the weights of FPN module."""
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                xavier_init(m, distribution='uniform')
 
     def forward(self, inputs):
         """Forward function."""
