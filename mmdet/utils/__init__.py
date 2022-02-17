@@ -1,8 +1,10 @@
-from .flops_counter import get_model_complexity_info
-from .logger import get_root_logger, print_log
-from .registry import Registry, build_from_cfg
+# Copyright (c) OpenMMLab. All rights reserved.
+from .collect_env import collect_env
+from .logger import get_root_logger
+from .misc import find_latest_checkpoint
+from .setup_env import setup_multi_processes
 
 __all__ = [
-    'Registry', 'build_from_cfg', 'get_model_complexity_info',
-    'get_root_logger', 'print_log'
+    'get_root_logger', 'collect_env', 'find_latest_checkpoint',
+    'setup_multi_processes'
 ]
